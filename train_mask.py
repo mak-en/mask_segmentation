@@ -145,7 +145,7 @@ class MaskDataset(pl.LightningDataModule):
         # img = norm_img * std[:, None, None] + mean[:, None, None]
         mask = train_labels[0]
         # plt.imshow(img.permute(1, 2, 0))
-        plt.imshow(mask)
+        plt.imshow(norm_img)
         plt.show()
         # print(f"Label: {self.labels_map[label.item()]}")
 
