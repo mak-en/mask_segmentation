@@ -28,23 +28,29 @@ class CovMask(Dataset):
     The link - https://www.kaggle.com/perke986/face-mask-segmentation-dataset
     """
 
-    def __init__(self, data_path):
+    def __init__(self, data_path, transform=None):
 
         self.data_path = data_path
         self.img_path = os.path.join(self.data_path,'data_mask/images')
         self.mask_path = os.path.join(self.data_path, 'data_mask/masks')
         self.img_list = self.get_filenames(self.img_path)
-        self.mask_list = self.get_filenames(self.mask_path)    
+        self.mask_list = self.get_filenames(self.mask_path)
+
+        self.transform = transform    
 
     def __len__(self):
         return(len(self.img_list))
 
     def __getitem__(self, idx):
         img = Image.open(self.img_list[idx])
-        img = np.array(img)
-
         mask = Image.open(self.mask_list[idx])
-        mask = np.array(mask)
+
+        if self.transform:
+            img = self.transform(img)
+            mask = self.transform(mask)
+
+        # img = np.array(img)
+        # mask = np.array(mask)
 
         return img, mask
 
@@ -87,12 +93,18 @@ class MaskDataset(pl.LightningDataModule):
             self.val_transform = transform
             self.test_transform = transform
         else:
-            pass
-        # self.transform = transforms.Compose([
-        #     transforms.ToTensor(),
-        #     transforms.Normalize(mean=[0.35675976, 0.37380189, 0.3764753],
-        #                          std=[0.32064945, 0.32098866, 0.32325324])
-        # ])
+            transform = transforms.Compose([
+                transforms.ColorJitter(hue=.20, saturation=.20),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomRotation(10),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.35675976, 0.37380189, 0.3764753],
+                                     std=[0.32064945, 0.32098866, 0.32325324])
+            ])
+            self.train_transform = transform
+            self.val_transform = transform
+            self.test_transform = transform
     
     def setup(self):
         dataset = CovMask(self.data_path)
@@ -129,8 +141,8 @@ class MaskDataset(pl.LightningDataModule):
             figure.add_subplot(rows, cols, i)
             # plt.title(self.labels_map[label])
             plt.axis("off")
-            # plt.imshow(norm_img.permute(1, 2, 0))
-            plt.imshow(norm_img)
+            plt.imshow(norm_img.permute(1, 2, 0))
+            # plt.imshow(norm_img)
         plt.show()
 
     def visualize_dataloader(self):
@@ -144,8 +156,8 @@ class MaskDataset(pl.LightningDataModule):
         # std = torch.tensor([0.229, 0.224, 0.225])
         # img = norm_img * std[:, None, None] + mean[:, None, None]
         mask = train_labels[0]
-        # plt.imshow(img.permute(1, 2, 0))
-        plt.imshow(norm_img)
+        plt.imshow(norm_img.permute(1, 2, 0))
+        # plt.imshow(norm_img)
         plt.show()
         # print(f"Label: {self.labels_map[label.item()]}")
 
