@@ -28,7 +28,7 @@ class CovMask(Dataset):
     The link - https://www.kaggle.com/perke986/face-mask-segmentation-dataset
     """
 
-    def __init__(self, data_path, transform=None):
+    def __init__(self, data_path, img_transform=None, mask_transform=None):
 
         self.data_path = data_path
         self.img_path = os.path.join(self.data_path,'data_mask/images')
@@ -36,21 +36,20 @@ class CovMask(Dataset):
         self.img_list = self.get_filenames(self.img_path)
         self.mask_list = self.get_filenames(self.mask_path)
 
-        self.transform = transform    
+        self.img_transform = img_transform
+        self.mask_transform = mask_transform    
 
     def __len__(self):
         return(len(self.img_list))
 
     def __getitem__(self, idx):
-        img = Image.open(self.img_list[idx])
-        mask = Image.open(self.mask_list[idx])
+        img = Image.open(self.img_list[idx]).convert("RGB")
+        mask = Image.open(self.mask_list[idx]).convert("1")
 
-        if self.transform:
-            img = self.transform(img)
-            mask = self.transform(mask)
-
-        # img = np.array(img)
-        # mask = np.array(mask)
+        if self.img_transform:
+            img = self.img_transform(img)
+        if self.mask_transform:
+            mask = self.mask_transform(mask)
 
         return img, mask
 
@@ -65,8 +64,7 @@ class CovMask(Dataset):
     
     def show_example(self, idx):
         '''
-        Demonstrates an 'idx' instance of the dataset.
-        If there is self.transformation, shows with the applied transformation
+        Demonstrates the 'idx' instance of the dataset.
         '''
         img = Image.open(self.img_list[idx])
         mask = Image.open(self.mask_list[idx])
@@ -81,17 +79,15 @@ class MaskDataset(pl.LightningDataModule):
     a flexible adjustment of the train, validate and test subsets.
     '''
 
-    def __init__(self, data_path, transform=None):
+    def __init__(self, data_path, img_transform=None, mask_transform=None):
         super().__init__()
         # print(hparams)
         self.data_path = data_path
         self.batch_size = 1
 
         # Transforms for train, val, test subsets (can be different)
-        if transform:
-            self.train_transform = transform
-            self.val_transform = transform
-            self.test_transform = transform
+        if img_transform:
+            self.img_train_transform = img_transform
         else:
             transform = transforms.Compose([
                 transforms.ColorJitter(hue=.20, saturation=.20),
@@ -102,9 +98,19 @@ class MaskDataset(pl.LightningDataModule):
                 transforms.Normalize(mean=[0.35675976, 0.37380189, 0.3764753],
                                      std=[0.32064945, 0.32098866, 0.32325324])
             ])
-            self.train_transform = transform
-            self.val_transform = transform
-            self.test_transform = transform
+            self.img_train_transform = transform
+        
+        if mask_transform:
+            self.mask_train_transform = mask_transform
+        else:
+            transform = transforms.Compose([
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomRotation(10),
+                transforms.ToTensor(),
+            ])
+            self.mask_train_transform = transform
+            
     
     def setup(self):
         dataset = CovMask(self.data_path)
@@ -116,9 +122,9 @@ class MaskDataset(pl.LightningDataModule):
         torch.utils.data.random_split(dataset, 
                                       [train_size, val_size, test_size])
 
-        self.train_set.dataset.transform = self.train_transform
-        self.val_set.dataset.transform = self.val_transform
-        self.test_set.dataset.transform = self.test_transform
+        self.train_set.dataset.img_transform = self.img_train_transform
+        self.train_set.dataset.mask_transform = self.mask_train_transform
+
     
     def train_dataloader(self):
         return DataLoader(self.train_set, batch_size=self.batch_size,
@@ -162,6 +168,20 @@ class MaskDataset(pl.LightningDataModule):
         # print(f"Label: {self.labels_map[label.item()]}")
 
 if __name__ == '__main__':
-    sd = MaskDataset('C:/Users/makov/Desktop')
-    sd.setup()
-    sd.visualize_dataloader()
+    sd = CovMask('C:/Users/ant_on/Desktop/')
+    # sd = MaskDataset('C:/Users/ant_on/Desktop/')
+    # sd.setup()
+    # sd.visualize_dataset()
+    a = sd.__getitem__(1)
+    to_tensor = transforms.ToTensor()
+    resize = transforms.Resize([224, 224])
+    img = resize(a[1])
+    tensor_a = to_tensor(img)
+    print(a)
+    print(tensor_a.size())
+
+    plt.imshow(tensor_a.permute(1, 2, 0))
+    plt.show()
+
+
+
