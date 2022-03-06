@@ -1,5 +1,6 @@
 # Imports
 import os
+from cv2 import transform
 
 import numpy as np
 from PIL import Image
@@ -8,6 +9,7 @@ import pytorch_lightning as pl
 import torchvision.transforms as transforms
 import torch
 import matplotlib.pyplot as plt
+import albumentations as A
 
 # Sweep initial parameters
 hyperparameter_defaults = dict(
@@ -28,7 +30,7 @@ class CovMask(Dataset):
     The link - https://www.kaggle.com/perke986/face-mask-segmentation-dataset
     """
 
-    def __init__(self, data_path, img_transform=None, mask_transform=None):
+    def __init__(self, data_path, transform=None):
 
         self.data_path = data_path
         self.img_path = os.path.join(self.data_path,'data_mask/images')
@@ -36,22 +38,22 @@ class CovMask(Dataset):
         self.img_list = self.get_filenames(self.img_path)
         self.mask_list = self.get_filenames(self.mask_path)
 
-        self.img_transform = img_transform
-        self.mask_transform = mask_transform    
+        self.transform = transform    
 
     def __len__(self):
         return(len(self.img_list))
 
     def __getitem__(self, idx):
-        img = Image.open(self.img_list[idx]).convert("RGB")
-        mask = Image.open(self.mask_list[idx]).convert("1")
+        img = Image.open(self.img_list[idx])
+        mask = Image.open(self.mask_list[idx])
 
-        if self.img_transform:
-            img = self.img_transform(img)
-        if self.mask_transform:
-            mask = self.mask_transform(mask)
-
-        return img, mask
+        if self.transform:
+            img = np.array(img)
+            mask = np.array(mask)
+            augmented = self.transform(image=img, mask=mask)
+            return augmented['image'], augmented['mask']
+        else:
+            return img, mask
 
     def get_filenames(self, path):
         '''
@@ -79,38 +81,24 @@ class MaskDataset(pl.LightningDataModule):
     a flexible adjustment of the train, validate and test subsets.
     '''
 
-    def __init__(self, data_path, img_transform=None, mask_transform=None):
+    def __init__(self, data_path):
         super().__init__()
         # print(hparams)
         self.data_path = data_path
         self.batch_size = 1
 
-        # Transforms for train, val, test subsets (can be different)
-        if img_transform:
-            self.img_train_transform = img_transform
-        else:
-            transform = transforms.Compose([
-                transforms.ColorJitter(hue=.20, saturation=.20),
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomVerticalFlip(),
-                transforms.RandomRotation(10),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.35675976, 0.37380189, 0.3764753],
-                                     std=[0.32064945, 0.32098866, 0.32325324])
-            ])
-            self.img_train_transform = transform
-        
-        if mask_transform:
-            self.mask_train_transform = mask_transform
-        else:
-            transform = transforms.Compose([
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomVerticalFlip(),
-                transforms.RandomRotation(10),
-                transforms.ToTensor(),
-            ])
-            self.mask_train_transform = transform
-            
+        # Transforms for train subsets (different for img and mask: the mask 
+        # tranforamtion does not include non affine transformations (look at
+        # the target parameter in the transforamtions classes below))
+        self.transform = A.Compose([A.Resize(244, 244),
+                                    A.VerticalFlip(p=0.5),              
+                                    A.RandomRotate90(p=0.5),
+                                    A.GridDistortion(p=0.5),
+                                    A.OpticalDistortion(distort_limit=2, 
+                                                        shift_limit=0.5, p=1),
+                                    A.CLAHE(p=0.8),
+                                    A.RandomBrightnessContrast(p=0.8),    
+                                    A.RandomGamma(p=0.8)])
     
     def setup(self):
         dataset = CovMask(self.data_path)
@@ -122,9 +110,7 @@ class MaskDataset(pl.LightningDataModule):
         torch.utils.data.random_split(dataset, 
                                       [train_size, val_size, test_size])
 
-        self.train_set.dataset.img_transform = self.img_train_transform
-        self.train_set.dataset.mask_transform = self.mask_train_transform
-
+        self.train_set.dataset.transform = self.transform
     
     def train_dataloader(self):
         return DataLoader(self.train_set, batch_size=self.batch_size,
@@ -136,23 +122,22 @@ class MaskDataset(pl.LightningDataModule):
 
     def visualize_dataset(self):
         # Visualizes a piece of the train subset
-        figure = plt.figure(figsize=(8, 8))
+        figure_img = plt.figure(figsize=(8, 8))
+        figure_mask = plt.figure(figsize=(8, 8))
         cols, rows = 3, 3
         for i in range(1, cols * rows + 1):
             sample_idx = torch.randint(len(self.train_set), size=(1,)).item()
-            norm_img, mask = self.train_set[sample_idx]
-            # mean = torch.tensor([0.485, 0.456, 0.406])
-            # std = torch.tensor([0.229, 0.224, 0.225])
-            # img = norm_img * std[:, None, None] + mean[:, None, None] 
-            figure.add_subplot(rows, cols, i)
-            # plt.title(self.labels_map[label])
-            plt.axis("off")
-            plt.imshow(norm_img.permute(1, 2, 0))
-            # plt.imshow(norm_img)
+            img, mask = self.train_set[sample_idx]
+            img_ax = figure_img.add_subplot(rows, cols, i)
+            mask_ax = figure_mask.add_subplot(rows, cols, i)
+            img_ax.axis("off")
+            mask_ax.axis("off")
+            img_ax.imshow(img)
+            mask_ax.imshow(mask)
         plt.show()
 
     def visualize_dataloader(self):
-        # Display one image and label from a train-subset batch
+        # Displays one image and label from a train-subset batch
         train_dataloader = self.train_dataloader()
         train_features, train_labels = next(iter(train_dataloader))
         print(f"Feature batch shape: {train_features.size()}")
@@ -168,20 +153,21 @@ class MaskDataset(pl.LightningDataModule):
         # print(f"Label: {self.labels_map[label.item()]}")
 
 if __name__ == '__main__':
-    sd = CovMask('C:/Users/ant_on/Desktop/')
-    # sd = MaskDataset('C:/Users/ant_on/Desktop/')
-    # sd.setup()
-    # sd.visualize_dataset()
-    a = sd.__getitem__(1)
-    to_tensor = transforms.ToTensor()
-    resize = transforms.Resize([224, 224])
-    img = resize(a[1])
-    tensor_a = to_tensor(img)
-    print(a)
-    print(tensor_a.size())
+    # sd = CovMask('C:/Users/ant_on/Desktop/')
+    sd = MaskDataset('C:/Users/ant_on/Desktop/')
+    sd.setup()
+    sd.visualize_dataset()
+    
+    # a = sd.__getitem__(1)
+    # to_tensor = transforms.ToTensor()
+    # resize = transforms.Resize([224, 224])
+    # img = resize(a[1])
+    # tensor_a = to_tensor(img)
+    # print(a)
+    # print(tensor_a.size())
 
-    plt.imshow(tensor_a.permute(1, 2, 0))
-    plt.show()
+    # plt.imshow(tensor_a.permute(1, 2, 0))
+    # plt.show()
 
 
 
