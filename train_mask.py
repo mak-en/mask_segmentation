@@ -10,6 +10,7 @@ import torchvision.transforms as transforms
 import torch
 import matplotlib.pyplot as plt
 import albumentations as A
+import segmentation_models_pytorch as smp
 
 # Sweep initial parameters
 hyperparameter_defaults = dict(
@@ -150,22 +151,44 @@ class MaskDataset(pl.LightningDataModule):
         ax_mask.imshow(mask)
         plt.show()
 
-if __name__ == '__main__':
-    # sd = CovMask('C:/Users/ant_on/Desktop/')
-    sd = MaskDataset('C:/Users/ant_on/Desktop/')
-    sd.setup()
-    sd.visualize_dataloader()
-    
-    # a = sd.__getitem__(1)
-    # to_tensor = transforms.ToTensor()
-    # resize = transforms.Resize([224, 224])
-    # img = resize(a[1])
-    # tensor_a = to_tensor(img)
-    # print(a)
-    # print(tensor_a.size())
+class MyModel(pl.LightningModule):
+    '''
+    Semantic Segmentation Module
+    '''
 
-    # plt.imshow(tensor_a.permute(1, 2, 0))
-    # plt.show()
+    def __init__(self, hparams):
+        super().__init__()
+        self.lr = hparams.lr
+        self.net = UNet(num_classes=19, num_layers=hparams.num_layers,
+                        features_start=hparams.features_start, bilinear=hparams.bilinear)
+
+    def forward(self, x):
+        return self.net(x)
+
+    def training_step(self, batch, batch_nb):
+        img, mask = batch
+        img = img.float()
+        mask = mask.long()
+        out = self(img)
+        loss_val = F.cross_entropy(out, mask, ignore_index=250)
+        self.log('train_loss', loss_val)    # log training loss
+        return loss_val
+
+    def validation_step(self, batch, batch_idx):
+        img, mask = batch
+        img = img.float()
+        mask = mask.long()
+        out = self(img)
+        loss_val = F.cross_entropy(out, mask, ignore_index=250)
+        self.log('val_loss', loss_val)  # will be automatically averaged over an epoch
+        
+    def configure_optimizers(self):
+        opt = torch.optim.Adam(self.net.parameters(), lr=self.lr)
+        sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
+        return [opt], [sch]
+
+if __name__ == '__main__':
+
 
 
 
