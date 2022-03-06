@@ -139,24 +139,22 @@ class MaskDataset(pl.LightningDataModule):
     def visualize_dataloader(self):
         # Displays one image and label from a train-subset batch
         train_dataloader = self.train_dataloader()
-        train_features, train_labels = next(iter(train_dataloader))
-        print(f"Feature batch shape: {train_features.size()}")
-        print(f"Labels batch shape: {train_labels.size()}")
-        norm_img = train_features[0]
-        # mean = torch.tensor([0.485, 0.456, 0.406])
-        # std = torch.tensor([0.229, 0.224, 0.225])
-        # img = norm_img * std[:, None, None] + mean[:, None, None]
-        mask = train_labels[0]
-        plt.imshow(norm_img.permute(1, 2, 0))
-        # plt.imshow(norm_img)
+        train_imgs, train_masks = next(iter(train_dataloader))
+        print(f"Images batch shape: {train_imgs.size()}")
+        print(f"Masks batch shape: {train_masks.size()}")
+        img = train_imgs[0]
+        mask = train_masks[0]
+        _, ax_img =  plt.subplots()
+        _, ax_mask =  plt.subplots()
+        ax_img.imshow(img)
+        ax_mask.imshow(mask)
         plt.show()
-        # print(f"Label: {self.labels_map[label.item()]}")
 
 if __name__ == '__main__':
     # sd = CovMask('C:/Users/ant_on/Desktop/')
     sd = MaskDataset('C:/Users/ant_on/Desktop/')
     sd.setup()
-    sd.visualize_dataset()
+    sd.visualize_dataloader()
     
     # a = sd.__getitem__(1)
     # to_tensor = transforms.ToTensor()
