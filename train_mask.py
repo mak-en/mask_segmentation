@@ -46,13 +46,20 @@ class CovMask(Dataset):
 
     def __getitem__(self, idx):
         img = Image.open(self.img_list[idx])
-        mask = Image.open(self.mask_list[idx])
+        mask = Image.open(self.mask_list[idx]).convert("L")
+
+        
 
         if self.transform:
             img = np.array(img)
             mask = np.array(mask)
+            print(img.shape)
+            print(mask.shape)
             augmented = self.transform(image=img, mask=mask)
-            return augmented['image'], augmented['mask']
+            img = np.moveaxis(augmented['image'], -1, 0)
+            mask = np.array(Image.fromarray(augmented['mask'])) / 255
+            mask = np.expand_dims(mask, axis=0)
+            return img, mask
         else:
             return img, mask
 
@@ -91,7 +98,7 @@ class MaskDataset(pl.LightningDataModule):
         # Transforms for train subsets (different for img and mask: the mask 
         # tranforamtion does not include non affine transformations (look at
         # the target parameter in the transforamtions classes below))
-        self.transform = A.Compose([A.Resize(244, 244),
+        self.transform = A.Compose([A.Resize(224, 224),
                                     A.VerticalFlip(p=0.5),              
                                     A.RandomRotate90(p=0.5),
                                     A.GridDistortion(p=0.5),
@@ -101,7 +108,7 @@ class MaskDataset(pl.LightningDataModule):
                                     A.RandomBrightnessContrast(p=0.8),    
                                     A.RandomGamma(p=0.8)])
     
-    def setup(self):
+    def setup(self, stage=None):
         dataset = CovMask(self.data_path)
         train_size = int(0.7 * len(dataset)) # take 70% for training
         val_size = int(0.2 * len(dataset)) # take 20% for validation
@@ -147,8 +154,8 @@ class MaskDataset(pl.LightningDataModule):
         mask = train_masks[0]
         _, ax_img =  plt.subplots()
         _, ax_mask =  plt.subplots()
-        ax_img.imshow(img)
-        ax_mask.imshow(mask)
+        ax_img.imshow(img.permute(1, 2, 0))
+        ax_mask.imshow(mask.permute(1, 2, 0))
         plt.show()
 
 class MyModel(pl.LightningModule):
@@ -205,6 +212,7 @@ class MyModel(pl.LightningModule):
 
         # Shape of the mask should be [batch_size, num_classes, height, width]
         # for binary segmentation num_classes = 1
+        print(f"Mask shape: {mask.shape}")
         assert mask.ndim == 4
 
         # Check that mask values in between 0 and 1, NOT 0 and 255 for 
@@ -288,7 +296,11 @@ class MyModel(pl.LightningModule):
         return torch.optim.Adam(self.parameters(), lr=0.0001)
 
 if __name__ == '__main__':
-    
+
+#    sd = MaskDataset("C:/Users/ant_on/Desktop/")
+#    sd.setup()
+#    sd.visualize_dataloader()
+
     model = MyModel("FPN", "resnet34", in_channels=3, out_classes=1)
 
     trainer = pl.Trainer(
@@ -296,7 +308,7 @@ if __name__ == '__main__':
         max_epochs=5,
     )
 
-    mask_dataset = MaskDataset("C:/Users/ant_on/Desktop/data_mask")
+    mask_dataset = MaskDataset("C:/Users/ant_on/Desktop/")
 
     trainer.fit(
         model, 
