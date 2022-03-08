@@ -48,13 +48,9 @@ class CovMask(Dataset):
         img = Image.open(self.img_list[idx])
         mask = Image.open(self.mask_list[idx]).convert("L")
 
-        
-
         if self.transform:
             img = np.array(img)
             mask = np.array(mask)
-            print(img.shape)
-            print(mask.shape)
             augmented = self.transform(image=img, mask=mask)
             img = np.moveaxis(augmented['image'], -1, 0)
             mask = np.array(Image.fromarray(augmented['mask'])) / 255
@@ -212,7 +208,7 @@ class MyModel(pl.LightningModule):
 
         # Shape of the mask should be [batch_size, num_classes, height, width]
         # for binary segmentation num_classes = 1
-        print(f"Mask shape: {mask.shape}")
+
         assert mask.ndim == 4
 
         # Check that mask values in between 0 and 1, NOT 0 and 255 for 
@@ -305,7 +301,7 @@ if __name__ == '__main__':
 
     trainer = pl.Trainer(
         gpus=1, 
-        max_epochs=5,
+        max_epochs=1,
     )
 
     mask_dataset = MaskDataset("C:/Users/ant_on/Desktop/")
