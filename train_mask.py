@@ -124,6 +124,10 @@ class MaskDataset(pl.LightningDataModule):
         return DataLoader(self.val_set, batch_size=self.batch_size,
                           shuffle=False, num_workers=2)
 
+    def test_dataloader(self):
+        return DataLoader(self.test_set, batch_size=self.batch_size,
+                          shuffle=False, num_workers=2)
+
     def visualize_dataset(self):
         # Visualizes a piece of the train subset
         figure_img = plt.figure(figsize=(8, 8))
@@ -301,7 +305,7 @@ if __name__ == '__main__':
 
     trainer = pl.Trainer(
         gpus=1, 
-        max_epochs=3,
+        max_epochs=2,
     )
 
     mask_dataset = MaskDataset("C:/Users/ant_on/Desktop/")
@@ -311,5 +315,43 @@ if __name__ == '__main__':
         mask_dataset
     )
 
-    # print(int(os.cpu_count()/2))
+    # run validation dataset
+    valid_metrics = trainer.validate(
+        model, dataloaders=mask_dataset.val_dataloader(), verbose=False
+        )
+    print(valid_metrics)
+
+    # run test dataset
+    test_metrics = trainer.test(
+        model, dataloaders=mask_dataset.test_dataloader(), verbose=False
+        )
+    print(test_metrics)
+
+    batch = next(iter(mask_dataset.test_dataloader()))
+    with torch.no_grad():
+        model.eval()
+        logits = model(batch[0])
+    pr_masks = logits.sigmoid()
+
+    for image, gt_mask, pr_mask in zip(batch[0], batch[1], pr_masks):
+        plt.figure(figsize=(10, 5))
+
+        plt.subplot(1, 3, 1)
+        plt.imshow(image.numpy().transpose(1, 2, 0))  # convert CHW -> HWC
+        plt.title("Image")
+        plt.axis("off")
+
+        plt.subplot(1, 3, 2)
+        plt.imshow(gt_mask.numpy().squeeze()) # just squeeze classes dim, 
+                                              # because we have only one class
+        plt.title("Ground truth")
+        plt.axis("off")
+
+        plt.subplot(1, 3, 3)
+        plt.imshow(pr_mask.numpy().squeeze()) # just squeeze classes dim, 
+                                              # because we have only one class
+        plt.title("Prediction")
+        plt.axis("off")
+
+        plt.show()
 
