@@ -89,7 +89,7 @@ class MaskDataset(pl.LightningDataModule):
         super().__init__()
         # print(hparams)
         self.data_path = data_path
-        self.batch_size = 1
+        self.batch_size = 16
 
         # Transforms for train subsets (different for img and mask: the mask 
         # tranforamtion does not include non affine transformations (look at
@@ -118,11 +118,11 @@ class MaskDataset(pl.LightningDataModule):
     
     def train_dataloader(self):
         return DataLoader(self.train_set, batch_size=self.batch_size,
-                          shuffle=True)
+                          shuffle=True, num_workers=2)
 
     def val_dataloader(self):
         return DataLoader(self.val_set, batch_size=self.batch_size,
-                          shuffle=False)
+                          shuffle=False, num_workers=2)
 
     def visualize_dataset(self):
         # Visualizes a piece of the train subset
@@ -301,7 +301,7 @@ if __name__ == '__main__':
 
     trainer = pl.Trainer(
         gpus=1, 
-        max_epochs=1,
+        max_epochs=3,
     )
 
     mask_dataset = MaskDataset("C:/Users/ant_on/Desktop/")
@@ -311,5 +311,5 @@ if __name__ == '__main__':
         mask_dataset
     )
 
-
+    # print(int(os.cpu_count()/2))
 
