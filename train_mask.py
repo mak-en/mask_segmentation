@@ -11,6 +11,8 @@ import torch
 import matplotlib.pyplot as plt
 import albumentations as A
 import segmentation_models_pytorch as smp
+import wandb
+from pytorch_lightning.loggers import WandbLogger
 
 # Sweep initial parameters
 hyperparameter_defaults = dict(
@@ -295,11 +297,10 @@ class MyModel(pl.LightningModule):
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.0001)
 
-if __name__ == '__main__':
-
-#    sd = MaskDataset("C:/Users/ant_on/Desktop/")
-#    sd.setup()
-#    sd.visualize_dataloader()
+def repeat():
+    # set up W&B logger
+    wandb.init()    # required to have access to `wandb.config`
+    wandb_logger = WandbLogger()
 
     model = MyModel("FPN", "resnet34", in_channels=3, out_classes=1)
 
@@ -315,43 +316,52 @@ if __name__ == '__main__':
         mask_dataset
     )
 
-    # run validation dataset
-    valid_metrics = trainer.validate(
-        model, dataloaders=mask_dataset.val_dataloader(), verbose=False
-        )
-    print(valid_metrics)
+if __name__ == '__main__':
 
-    # run test dataset
-    test_metrics = trainer.test(
-        model, dataloaders=mask_dataset.test_dataloader(), verbose=False
-        )
-    print(test_metrics)
+#    sd = MaskDataset("C:/Users/ant_on/Desktop/")
+#    sd.setup()
+#    sd.visualize_dataloader()
+    sweep_id = wandb.sweep(sweep_config, project="Mask segmentation")
 
-    batch = next(iter(mask_dataset.test_dataloader()))
-    with torch.no_grad():
-        model.eval()
-        logits = model(batch[0])
-    pr_masks = logits.sigmoid()
+    wandb.agent(sweep_id, function=repeat)
 
-    for image, gt_mask, pr_mask in zip(batch[0], batch[1], pr_masks):
-        plt.figure(figsize=(10, 5))
+    # # run validation dataset
+    # valid_metrics = trainer.validate(
+    #     model, dataloaders=mask_dataset.val_dataloader(), verbose=False
+    #     )
+    # print(valid_metrics)
 
-        plt.subplot(1, 3, 1)
-        plt.imshow(image.numpy().transpose(1, 2, 0))  # convert CHW -> HWC
-        plt.title("Image")
-        plt.axis("off")
+    # # run test dataset
+    # test_metrics = trainer.test(
+    #     model, dataloaders=mask_dataset.test_dataloader(), verbose=False
+    #     )
+    # print(test_metrics)
 
-        plt.subplot(1, 3, 2)
-        plt.imshow(gt_mask.numpy().squeeze()) # just squeeze classes dim, 
-                                              # because we have only one class
-        plt.title("Ground truth")
-        plt.axis("off")
+    # batch = next(iter(mask_dataset.test_dataloader()))
+    # with torch.no_grad():
+    #     model.eval()
+    #     logits = model(batch[0])
+    # pr_masks = logits.sigmoid()
 
-        plt.subplot(1, 3, 3)
-        plt.imshow(pr_mask.numpy().squeeze()) # just squeeze classes dim, 
-                                              # because we have only one class
-        plt.title("Prediction")
-        plt.axis("off")
+    # for image, gt_mask, pr_mask in zip(batch[0], batch[1], pr_masks):
+    #     plt.figure(figsize=(10, 5))
 
-        plt.show()
+    #     plt.subplot(1, 3, 1)
+    #     plt.imshow(image.numpy().transpose(1, 2, 0))  # convert CHW -> HWC
+    #     plt.title("Image")
+    #     plt.axis("off")
+
+    #     plt.subplot(1, 3, 2)
+    #     plt.imshow(gt_mask.numpy().squeeze()) # just squeeze classes dim, 
+    #                                           # because we have only one class
+    #     plt.title("Ground truth")
+    #     plt.axis("off")
+
+    #     plt.subplot(1, 3, 3)
+    #     plt.imshow(pr_mask.numpy().squeeze()) # just squeeze classes dim, 
+    #                                           # because we have only one class
+    #     plt.title("Prediction")
+    #     plt.axis("off")
+
+    #     plt.show()
 
