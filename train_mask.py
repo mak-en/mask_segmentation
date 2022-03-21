@@ -317,13 +317,14 @@ def repeat():
     )
 
 if __name__ == '__main__':
+    pass
 
 #    sd = MaskDataset("C:/Users/ant_on/Desktop/")
 #    sd.setup()
 #    sd.visualize_dataloader()
-    sweep_id = wandb.sweep(sweep_config, project="Mask segmentation")
+    # sweep_id = wandb.sweep(sweep_config, project="Mask segmentation")
 
-    wandb.agent(sweep_id, function=repeat)
+    # wandb.agent(sweep_id, function=repeat)
 
     # # run validation dataset
     # valid_metrics = trainer.validate(
