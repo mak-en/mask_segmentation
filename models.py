@@ -23,11 +23,17 @@ class MyModel(pl.LightningModule):
 
         # preprocessing parameteres for image
         params = smp.encoders.get_preprocessing_params(encoder_name)
-        self.register_buffer("std", torch.tensor(params["std"]).view(1, 3, 1, 1))
-        self.register_buffer("mean", torch.tensor(params["mean"]).view(1, 3, 1, 1))
+        self.register_buffer(
+            "std", torch.tensor(params["std"]).view(1, 3, 1, 1)
+            )
+        self.register_buffer(
+            "mean", torch.tensor(params["mean"]).view(1, 3, 1, 1)
+            )
 
         # for image segmentation dice loss could be the best first choice
-        self.loss_fn = smp.losses.DiceLoss(smp.losses.BINARY_MODE, from_logits=True)
+        self.loss_fn = smp.losses.DiceLoss(
+            smp.losses.BINARY_MODE, from_logits=True
+            )
 
     def forward(self, image):
         # normalize image here

@@ -69,11 +69,12 @@ class MaskDataset(pl.LightningDataModule):
     a flexible adjustment of the train, validate and test subsets.
     '''
 
-    def __init__(self, data_path):
+    def __init__(self, data_path, num_workers=1):
         super().__init__()
         # print(hparams)
         self.data_path = data_path
         self.batch_size = 16
+        self.num_workers = num_workers
 
         # Transforms for train subsets (different for img and mask: the mask 
         # tranforamtion does not include non affine transformations (look at
@@ -92,7 +93,7 @@ class MaskDataset(pl.LightningDataModule):
         dataset = CovMask(self.data_path)
         train_size = int(0.7 * len(dataset)) # take 70% for training
         val_size = int(0.2 * len(dataset)) # take 20% for validation
-        test_size = len(dataset) - (train_size + val_size) # take 10% for test
+        test_size = len(dataset) - (train_size + val_size) # take 10% for testing
 
         self.train_set, self.val_set, self.test_set = \
         torch.utils.data.random_split(dataset, 
@@ -102,15 +103,15 @@ class MaskDataset(pl.LightningDataModule):
     
     def train_dataloader(self):
         return DataLoader(self.train_set, batch_size=self.batch_size,
-                          shuffle=True, num_workers=2)
+                          shuffle=True, num_workers=self.num_workers)
 
     def val_dataloader(self):
         return DataLoader(self.val_set, batch_size=self.batch_size,
-                          shuffle=False, num_workers=2)
+                          shuffle=False, num_workers=self.num_workers)
 
     def test_dataloader(self):
         return DataLoader(self.test_set, batch_size=self.batch_size,
-                          shuffle=False, num_workers=2)
+                          shuffle=False, num_workers=self.num_workers)
 
     def visualize_dataset(self):
         # Visualizes a piece of the train subset
