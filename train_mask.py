@@ -17,7 +17,7 @@ from pytorch_lightning.loggers import WandbLogger
 # Sweep initial parameters
 hyperparameter_defaults = dict(
     data_path='data_semantics',
-    batch_size = 2,
+    batch_size=2,
     lr = 1e-3,
     num_layers = 5,
     features_start = 64,
@@ -25,6 +25,7 @@ hyperparameter_defaults = dict(
     grad_batches = 1,
     epochs = 20
 )
+
 
 # Dataset
 class CovMask(Dataset):

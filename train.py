@@ -7,8 +7,9 @@ import pytorch_lightning as pl
 from models import MyModel
 from data import MaskDataset
 
+
 def train():
-     # set up W&B logger
+    # set up W&B logger
     wandb.init()    # required to have access to `wandb.config`
     wandb_logger = WandbLogger()
 
@@ -16,7 +17,7 @@ def train():
 
     trainer = pl.Trainer(
         logger=wandb_logger,
-        gpus=-1, # use all gpus
+        gpus=-1,  # use all gpus
         max_epochs=2,
     )
 
@@ -26,13 +27,13 @@ def train():
         )
 
     trainer.fit(
-        model, 
+        model,
         mask_dataset
     )
 
 
 if __name__ == "__main__":
-    
+
     wandb.login()
 
     sweep_config = MyModel.get_sweep_config()
