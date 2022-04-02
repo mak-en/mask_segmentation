@@ -4,7 +4,7 @@ import wandb
 from pytorch_lightning.loggers import WandbLogger
 import pytorch_lightning as pl
 
-from models import MyModel
+from model import MyModel
 from data import MaskDataset
 
 

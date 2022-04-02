@@ -2,14 +2,13 @@ import torch
 import pytorch_lightning as pl
 import segmentation_models_pytorch as smp
 
+
 class MyModel(pl.LightningModule):
-    '''
-    Semantic Segmentation Module
-    '''
+    '''Semantic Segmentation Module'''
 
     def __init__(
         self, arch, encoder_name, in_channels, out_classes, **kwargs
-        ):
+    ):
         super().__init__()
 
         # self.lr = hparams.lr
@@ -72,13 +71,13 @@ class MyModel(pl.LightningModule):
         assert mask.max() <= 1.0 and mask.min() >= 0
 
         logits_mask = self.forward(image)
-        
-        # Predicted mask contains logits, and loss_fn param 
+
+        # Predicted mask contains logits, and loss_fn param
         # `from_logits` is set to True
         loss = self.loss_fn(logits_mask, mask)
 
         # Lets compute metrics for some threshold
-        # first convert mask values to probabilities, then 
+        # first convert mask values to probabilities, then
         # apply thresholding
         prob_mask = logits_mask.sigmoid()
         pred_mask = (prob_mask > 0.5).float()
@@ -86,7 +85,8 @@ class MyModel(pl.LightningModule):
         # We will compute IoU metric by two ways
         #   1. dataset-wise
         #   2. image-wise
-        # but for now we just compute true positive, false positive, false negative and
+        # but for now we just compute true positive, false positive, 
+        # false negative and
         # true negative 'pixels' for each image and class
         # these values will be aggregated in the end of an epoch
         tp, fp, fn, tn = smp.metrics.get_stats(
@@ -123,11 +123,11 @@ class MyModel(pl.LightningModule):
             f"{stage}_per_image_iou": per_image_iou,
             f"{stage}_dataset_iou": dataset_iou,
         }
-        
+
         self.log_dict(metrics, prog_bar=True)
 
     def training_step(self, batch, batch_idx):
-        return self.shared_step(batch, "train")            
+        return self.shared_step(batch, "train")       
 
     def training_epoch_end(self, outputs):
         return self.shared_epoch_end(outputs, "train")
@@ -146,6 +146,3 @@ class MyModel(pl.LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.0001)
-
-    def get_sweep_config():
-        pass

@@ -8,6 +8,7 @@ import torch
 import matplotlib.pyplot as plt
 import albumentations as A
 
+
 # Dataset
 class CovMask(Dataset):
     """

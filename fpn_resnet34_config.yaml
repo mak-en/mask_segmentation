@@ -1,0 +1,17 @@
+program: train.py
+method: random
+metric:
+  name: valid_dataset_iou
+  goal: maximize
+parameters:
+  batch_size:
+    values: [4, 8, 16, 32, 63, 128]
+  lr:
+    distribution: log_uniform
+    min: -9.21
+    max: -4.61
+early_terminate:
+  type: hyperband
+  eta: 2
+  min_iter: 3
+  max_iter: 15
