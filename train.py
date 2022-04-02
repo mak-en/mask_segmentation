@@ -1,16 +1,19 @@
 import os
+import argparse
 
 import wandb
 from pytorch_lightning.loggers import WandbLogger
 import pytorch_lightning as pl
+import yaml
 
 from model import MyModel
 from data import MaskDataset
 
 
 def train():
+    # required to have access to `wandb.config`
+    wandb.init()
     # set up W&B logger
-    wandb.init()    # required to have access to `wandb.config`
     wandb_logger = WandbLogger()
 
     model = MyModel("FPN", "resnet34", in_channels=3, out_classes=1)
@@ -34,8 +37,26 @@ def train():
 
 if __name__ == "__main__":
 
+    cpu_number = os.cpu_count()
+
+    parser = argparse.ArgumentParser(description='Mask segmentation')
+    parser.add_argument('--data_path', default='C:/Users/ant_on/Desktop/',
+                        type=str)
+    parser.add_argument('--architecture', default='FPN', type=str,
+                        help='network architecture')
+    parser.add_argument('--encoder', default='resnet34', type=str)
+    parser.add_argument('--in_chanels', default=3, type=int,
+                        help='number of input channels')
+    parser.add_argument('--out_classes', default=1, type=int,
+                        help='number of output classes')
+    parser.add_argument('--cpu_number', default=cpu_number, type=int,
+                        help='number of cpus')
+    args = parser.parse_args()
+
     wandb.login()
 
-    sweep_config = MyModel.get_sweep_config()
+    with open('fpn_resnet34_config.yaml') as f:
+        sweep_config = yaml.load(f, Loader=yaml.FullLoader)
+
     sweep_id = wandb.sweep(sweep_config, project="mask_segmentation")
     wandb.agent(sweep_id, train, count=5)
