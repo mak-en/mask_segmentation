@@ -25,37 +25,38 @@ def train():
     )
 
     mask_dataset = MaskDataset(
-        "C:/Users/ant_on/Desktop/",
-        num_workers=os.cpu_count()
-        )
-
-    trainer.fit(
-        model,
-        mask_dataset
+        "C:/Users/ant_on/Desktop/", num_workers=os.cpu_count()
     )
+
+    trainer.fit(model, mask_dataset)
 
 
 if __name__ == "__main__":
 
     cpu_number = os.cpu_count()
 
-    parser = argparse.ArgumentParser(description='Mask segmentation')
-    parser.add_argument('--data_path', default='C:/Users/ant_on/Desktop/',
-                        type=str)
-    parser.add_argument('--architecture', default='FPN', type=str,
-                        help='network architecture')
-    parser.add_argument('--encoder', default='resnet34', type=str)
-    parser.add_argument('--in_chanels', default=3, type=int,
-                        help='number of input channels')
-    parser.add_argument('--out_classes', default=1, type=int,
-                        help='number of output classes')
-    parser.add_argument('--cpu_number', default=cpu_number, type=int,
-                        help='number of cpus')
+    parser = argparse.ArgumentParser(description="Mask segmentation")
+    parser.add_argument(
+        "--data_path", default="C:/Users/ant_on/Desktop/", type=str
+    )
+    parser.add_argument(
+        "--architecture", default="FPN", type=str, help="network architecture"
+    )
+    parser.add_argument("--encoder", default="resnet34", type=str)
+    parser.add_argument(
+        "--in_chanels", default=3, type=int, help="number of input channels"
+    )
+    parser.add_argument(
+        "--out_classes", default=1, type=int, help="number of output classes"
+    )
+    parser.add_argument(
+        "--cpu_number", default=cpu_number, type=int, help="number of cpus"
+    )
     args = parser.parse_args()
 
     wandb.login()
 
-    with open('fpn_resnet34_config.yaml') as f:
+    with open("fpn_resnet34_config.yaml") as f:
         sweep_config = yaml.load(f, Loader=yaml.FullLoader)
 
     sweep_id = wandb.sweep(sweep_config, project="mask_segmentation")
