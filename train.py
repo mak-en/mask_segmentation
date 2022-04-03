@@ -24,9 +24,7 @@ def train():
         max_epochs=2,
     )
 
-    mask_dataset = MaskDataset(
-        "C:/Users/ant_on/Desktop/", num_workers=os.cpu_count()
-    )
+    mask_dataset = MaskDataset("C:/Users/ant_on/Desktop/", num_workers=2)
 
     trainer.fit(model, mask_dataset)
 
