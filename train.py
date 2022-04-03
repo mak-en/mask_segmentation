@@ -31,14 +31,12 @@ def train():
 
 if __name__ == "__main__":
 
-    cpu_number = os.cpu_count()
-
     parser = argparse.ArgumentParser(description="Mask segmentation")
     parser.add_argument(
         "--data_path", default="C:/Users/ant_on/Desktop/", type=str
     )
     parser.add_argument(
-        "--cpu_number", default=cpu_number, type=int, help="number of cpus"
+        "--cpu_number", default=os.cpu_count(), type=int, help="number of cpus"
     )
     args = parser.parse_args()
 
