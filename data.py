@@ -19,15 +19,15 @@ class CovMask(Dataset):
     def __init__(self, data_path, transform=None):
 
         self.data_path = data_path
-        self.img_path = os.path.join(self.data_path,'data_mask/images')
-        self.mask_path = os.path.join(self.data_path, 'data_mask/masks')
+        self.img_path = os.path.join(self.data_path, "data_mask/images")
+        self.mask_path = os.path.join(self.data_path, "data_mask/masks")
         self.img_list = self.get_filenames(self.img_path)
         self.mask_list = self.get_filenames(self.mask_path)
 
-        self.transform = transform    
+        self.transform = transform
 
     def __len__(self):
-        return(len(self.img_list))
+        return len(self.img_list)
 
     def __getitem__(self, idx):
         img = Image.open(self.img_list[idx])
@@ -37,38 +37,37 @@ class CovMask(Dataset):
             img = np.array(img)
             mask = np.array(mask)
             augmented = self.transform(image=img, mask=mask)
-            img = np.moveaxis(augmented['image'], -1, 0)
-            mask = np.array(Image.fromarray(augmented['mask'])) / 255
+            img = np.moveaxis(augmented["image"], -1, 0)
+            mask = np.array(Image.fromarray(augmented["mask"])) / 255
             mask = np.expand_dims(mask, axis=0)
             return img, mask
         else:
             return img, mask
 
     def get_filenames(self, path):
-        '''
-        Returns a list of absolute paths to images inside given `path`
-        '''
+        """Returns a list of absolute paths to images inside given path`"""
+
         files_list = list()
         for filename in os.listdir(path):
             files_list.append(os.path.join(path, filename))
         return files_list
-    
+
     def show_example(self, idx):
-        '''
-        Demonstrates the 'idx' instance of the dataset.
-        '''
+        """Demonstrates the 'idx' instance of the dataset"""
+
         img = Image.open(self.img_list[idx])
         mask = Image.open(self.mask_list[idx])
 
         img.show()
         mask.show()
 
+
 class MaskDataset(pl.LightningDataModule):
-    '''
+    """
     Pytorch Lightning DataModule.
     Moving the transform operation here (from the CovMask(Dataset)) allows
     a flexible adjustment of the train, validate and test subsets.
-    '''
+    """
 
     def __init__(self, data_path, num_workers=1):
         super().__init__()
@@ -77,42 +76,63 @@ class MaskDataset(pl.LightningDataModule):
         self.batch_size = 16
         self.num_workers = num_workers
 
-        # Transforms for train subsets (different for img and mask: the mask 
+        # Transforms for train subsets (different for img and mask: the mask
         # tranforamtion does not include non affine transformations (look at
         # the target parameter in the transforamtions classes below))
-        self.transform = A.Compose([A.Resize(224, 224),
-                                    A.VerticalFlip(p=0.5),              
-                                    A.RandomRotate90(p=0.5),
-                                    A.GridDistortion(p=0.5),
-                                    A.OpticalDistortion(distort_limit=2, 
-                                                        shift_limit=0.5, p=1),
-                                    A.CLAHE(p=0.8),
-                                    A.RandomBrightnessContrast(p=0.8),    
-                                    A.RandomGamma(p=0.8)])
-    
+        self.transform = A.Compose(
+            [
+                A.Resize(224, 224),
+                A.VerticalFlip(p=0.5),
+                A.RandomRotate90(p=0.5),
+                A.GridDistortion(p=0.5),
+                A.OpticalDistortion(distort_limit=2, shift_limit=0.5, p=1),
+                A.CLAHE(p=0.8),
+                A.RandomBrightnessContrast(p=0.8),
+                A.RandomGamma(p=0.8),
+            ]
+        )
+
     def setup(self, stage=None):
         dataset = CovMask(self.data_path)
-        train_size = int(0.7 * len(dataset)) # take 70% for training
-        val_size = int(0.2 * len(dataset)) # take 20% for validation
-        test_size = len(dataset) - (train_size + val_size) # take 10% for testing
+        train_size = int(0.7 * len(dataset))  # take 70% for training
+        val_size = int(0.2 * len(dataset))  # take 20% for validation
+        test_size = len(dataset) - (
+            train_size + val_size
+        )  # take 10% for testing
 
-        self.train_set, self.val_set, self.test_set = \
-        torch.utils.data.random_split(dataset, 
-                                      [train_size, val_size, test_size])
+        (
+            self.train_set,
+            self.val_set,
+            self.test_set,
+        ) = torch.utils.data.random_split(
+            dataset, [train_size, val_size, test_size]
+        )
 
         self.train_set.dataset.transform = self.transform
-    
+
     def train_dataloader(self):
-        return DataLoader(self.train_set, batch_size=self.batch_size,
-                          shuffle=True, num_workers=self.num_workers)
+        return DataLoader(
+            self.train_set,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.val_set, batch_size=self.batch_size,
-                          shuffle=False, num_workers=self.num_workers)
+        return DataLoader(
+            self.val_set,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.test_set, batch_size=self.batch_size,
-                          shuffle=False, num_workers=self.num_workers)
+        return DataLoader(
+            self.test_set,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
 
     def visualize_dataset(self):
         # Visualizes a piece of the train subset
@@ -138,8 +158,8 @@ class MaskDataset(pl.LightningDataModule):
         print(f"Masks batch shape: {train_masks.size()}")
         img = train_imgs[0]
         mask = train_masks[0]
-        _, ax_img =  plt.subplots()
-        _, ax_mask =  plt.subplots()
+        _, ax_img = plt.subplots()
+        _, ax_mask = plt.subplots()
         ax_img.imshow(img.permute(1, 2, 0))
         ax_mask.imshow(mask.permute(1, 2, 0))
         plt.show()
