@@ -10,6 +10,14 @@ parameters:
     distribution: log_uniform
     min: -9.21
     max: -4.61
+  architecture:
+    value: "FPN"
+  encoder:
+    value: "resnet34"
+  in_channels:
+    value: 3
+  out_classes:
+    value: 1
 early_terminate:
   type: hyperband
   eta: 2
