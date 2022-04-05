@@ -23,3 +23,5 @@ early_terminate:
   eta: 2
   min_iter: 3
   max_iter: 15
+command:
+  value: ${args}

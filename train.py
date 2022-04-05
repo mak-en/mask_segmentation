@@ -11,18 +11,23 @@ from model import MyModel
 from data import MaskDataset
 
 
-def train(data_path: str, cpu_number: Optional[int] = 1):
+def train(
+    data_path: str,
+    cpu_number: Optional[int] = 1,
+):
     # required to have access to `wandb.config`
     wandb.init()
     # set up W&B logger
     wandb_logger = WandbLogger()
+
+    print("CONFIG", wandb.config)
 
     model = MyModel(
         wandb.config.architecture,
         wandb.config.encoder,
         wandb.config.in_channels,
         wandb.config.out_classes,
-        lr=wandb.config.lr
+        lr=wandb.config.lr,
     )
 
     trainer = pl.Trainer(
