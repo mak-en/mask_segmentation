@@ -6,10 +6,18 @@ import segmentation_models_pytorch as smp
 class MyModel(pl.LightningModule):
     """Semantic Segmentation Module"""
 
-    def __init__(self, arch, encoder_name, in_channels, out_classes, **kwargs):
+    def __init__(
+        self,
+        arch: str = "FPN",
+        encoder_name: str = "resnet34",
+        in_channels: int = 3,
+        out_classes: int = 1,
+        lr=0.0001,
+        **kwargs,
+    ):
         super().__init__()
 
-        # self.lr = hparams.lr
+        self.lr = lr
         self.model = smp.create_model(
             arch,
             encoder_name=encoder_name,
@@ -102,10 +110,12 @@ class MyModel(pl.LightningModule):
 
     def shared_epoch_end(self, outputs, stage):
         # aggregate step metics
+        # loss = torch.cat([x["loss"] for x in outputs])
         tp = torch.cat([x["tp"] for x in outputs])
         fp = torch.cat([x["fp"] for x in outputs])
         fn = torch.cat([x["fn"] for x in outputs])
         tn = torch.cat([x["tn"] for x in outputs])
+        loss = outputs[-1]["loss"]
 
         # per image IoU means that we first calculate IoU score for each image
         # and then compute mean over these scores
@@ -125,6 +135,7 @@ class MyModel(pl.LightningModule):
         dataset_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
 
         metrics = {
+            f"{stage}_loss": loss,
             f"{stage}_per_image_iou": per_image_iou,
             f"{stage}_dataset_iou": dataset_iou,
         }
@@ -150,4 +161,4 @@ class MyModel(pl.LightningModule):
         return self.shared_epoch_end(outputs, "test")
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.0001)
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
