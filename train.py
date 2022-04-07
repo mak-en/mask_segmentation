@@ -1,5 +1,6 @@
 import os
 import argparse
+import warnings
 
 import wandb
 from pytorch_lightning.loggers import WandbLogger
@@ -27,8 +28,7 @@ def train():
     )
 
     trainer = pl.Trainer(
-        logger=wandb_logger,
-        gpus=-1,  # use all gpus
+        logger=wandb_logger, gpus=-1, max_epochs=10  # gpus=-1 - use all gpus
     )
 
     mask_dataset = MaskDataset(
@@ -41,6 +41,8 @@ def train():
 
 
 if __name__ == "__main__":
+
+    warnings.filterwarnings("ignore")
 
     parser = argparse.ArgumentParser(description="Mask segmentation")
     parser.add_argument("--data_path", type=str)
@@ -63,4 +65,4 @@ if __name__ == "__main__":
     )
 
     sweep_id = wandb.sweep(sweep_config, project="mask_segmentation")
-    wandb.agent(sweep_id, train, count=5)
+    wandb.agent(sweep_id, train, count=3)
