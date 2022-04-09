@@ -1,6 +1,7 @@
 import torch
 import pytorch_lightning as pl
 import segmentation_models_pytorch as smp
+import wandb
 
 
 class MyModel(pl.LightningModule):
@@ -12,7 +13,7 @@ class MyModel(pl.LightningModule):
         encoder_name: str = "resnet34",
         in_channels: int = 3,
         out_classes: int = 1,
-        lr=0.0001,
+        lr: float = 0.0001,
         **kwargs,
     ):
         super().__init__()
@@ -100,7 +101,11 @@ class MyModel(pl.LightningModule):
             pred_mask.long(), mask.long(), mode="binary"
         )
 
+        # Lets's also return the image, pred_mask and mask for logging in wandb
+        graphics = {"image": image, "mask": mask, "pred_mask": pred_mask.int()}
+
         return {
+            "graphics": graphics,
             "loss": loss,
             "tp": tp,
             "fp": fp,
@@ -110,12 +115,12 @@ class MyModel(pl.LightningModule):
 
     def shared_epoch_end(self, outputs, stage):
         # aggregate step metics
-        # loss = torch.cat([x["loss"] for x in outputs])
         tp = torch.cat([x["tp"] for x in outputs])
         fp = torch.cat([x["fp"] for x in outputs])
         fn = torch.cat([x["fn"] for x in outputs])
         tn = torch.cat([x["tn"] for x in outputs])
         loss = outputs[-1]["loss"]
+        graphics = outputs[-1]["graphics"]
 
         # per image IoU means that we first calculate IoU score for each image
         # and then compute mean over these scores
@@ -134,7 +139,14 @@ class MyModel(pl.LightningModule):
         # on dataset_iou.
         dataset_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
 
+        # Making a dict for logging in wandb
+        mask_img = wandb.Image(
+            graphics["image"],
+            masks={"predictions": {"mask_data": graphics["pred_mask"]}},
+        )
+
         metrics = {
+            f"{stage}_graphics": mask_img,
             f"{stage}_loss": loss,
             f"{stage}_per_image_iou": per_image_iou,
             f"{stage}_dataset_iou": dataset_iou,
