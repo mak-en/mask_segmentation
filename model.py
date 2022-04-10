@@ -142,22 +142,16 @@ class MyModel(pl.LightningModule):
 
         transform = T.ToPILImage()
         # Making a dict for logging in wandb
-        mask_img = wandb.Image(
-            transform(graphics["image"][-1]),
-            masks={
-                "predictions": {
-                    "mask_data": transform(graphics["pred_mask"][-1])
-                }
-            },
-        )
+        mask_img = wandb.Image(transform(graphics["image"][-1]))
 
         metrics = {
-            f"{stage}_graphics": mask_img,
+            # f"{stage}_graphics": mask_img,
             f"{stage}_loss": loss,
             f"{stage}_per_image_iou": per_image_iou,
             f"{stage}_dataset_iou": dataset_iou,
         }
 
+        wandb.log({"graphics": mask_img})
         self.log_dict(metrics, prog_bar=True)
 
     def training_step(self, batch, batch_idx):
