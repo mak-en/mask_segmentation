@@ -1,4 +1,5 @@
 import torch
+import torchvision.transforms as T
 import pytorch_lightning as pl
 import segmentation_models_pytorch as smp
 import wandb
@@ -139,10 +140,15 @@ class MyModel(pl.LightningModule):
         # on dataset_iou.
         dataset_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
 
+        transform = T.ToPILImage()
         # Making a dict for logging in wandb
         mask_img = wandb.Image(
-            graphics["image"],
-            masks={"predictions": {"mask_data": graphics["pred_mask"]}},
+            transform(graphics["image"][-1]),
+            masks={
+                "predictions": {
+                    "mask_data": transform(graphics["pred_mask"][-1])
+                }
+            },
         )
 
         metrics = {
