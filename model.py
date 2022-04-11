@@ -102,8 +102,17 @@ class MyModel(pl.LightningModule):
             pred_mask.long(), mask.long(), mode="binary"
         )
 
+        # Copy the tensors for logging
+        log_image = image.clone().detach()
+        log_mask = mask.clone().detach()
+        log_pred_mask = pred_mask.clone().detach().int()
+
         # Lets's also return the image, pred_mask and mask for logging in wandb
-        graphics = {"image": image, "mask": mask, "pred_mask": pred_mask.int()}
+        graphics = {
+            "image": log_image,
+            "mask": log_mask,
+            "pred_mask": log_pred_mask,
+        }
 
         return {
             "graphics": graphics,
@@ -142,7 +151,17 @@ class MyModel(pl.LightningModule):
 
         transform = T.ToPILImage()
         # Making a dict for logging in wandb
-        mask_img = wandb.Image(transform(graphics["image"][-1]))
+        mask_img = wandb.Image(
+            transform(graphics["image"][0]),
+            masks={
+                "predictions": {
+                    "mask_data": graphics["pred_mask"][0][0].cpu().numpy()
+                },
+                "ground_truth": {
+                    "mask_data": graphics["mask"][0][0].cpu().numpy()
+                },
+            },
+        )
 
         metrics = {
             # f"{stage}_graphics": mask_img,
