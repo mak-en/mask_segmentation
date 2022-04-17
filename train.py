@@ -19,16 +19,16 @@ def train():
 
     print("CONFIG", wandb.config)
 
+    trainer = pl.Trainer(
+        logger=wandb_logger, gpus=-1, max_epochs=10  # gpus=-1 - use all gpus
+    )
+
     model = MyModel(
         wandb.config.architecture,
         wandb.config.encoder,
         wandb.config.in_channels,
         wandb.config.out_classes,
         lr=wandb.config.lr,
-    )
-
-    trainer = pl.Trainer(
-        logger=wandb_logger, gpus=-1, max_epochs=10  # gpus=-1 - use all gpus
     )
 
     mask_dataset = MaskDataset(
