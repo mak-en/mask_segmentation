@@ -6,6 +6,7 @@ import wandb
 from pytorch_lightning.loggers import WandbLogger
 import pytorch_lightning as pl
 import yaml
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from model import MyModel
 from data import MaskDataset
@@ -19,10 +20,6 @@ def train():
 
     print("CONFIG", wandb.config)
 
-    trainer = pl.Trainer(
-        logger=wandb_logger, gpus=-1, max_epochs=10  # gpus=-1 - use all gpus
-    )
-
     model = MyModel(
         wandb.config.architecture,
         wandb.config.encoder,
@@ -35,6 +32,22 @@ def train():
         wandb.config.data_path,
         num_workers=wandb.config.cpu_number,
         batch_size=wandb.config.batch_size,
+    )
+
+    # Init ModelCheckpoint callback, monitoring 'valid_dataset_iou'
+    checkpoint_callback = ModelCheckpoint(
+        dirpath="./best_models_ckpt/",
+        filename=f"{wandb.run.name}-"
+        + "{epoch:02d}-{step:03d}-{valid_dataset_iou:.2f}",
+        monitor="valid_dataset_iou",
+        mode="max",
+    )
+
+    trainer = pl.Trainer(
+        logger=wandb_logger,
+        gpus=-1,  # gpus=-1 - use all gpus
+        max_epochs=10,
+        callbacks=[checkpoint_callback],
     )
 
     trainer.fit(model, mask_dataset)
