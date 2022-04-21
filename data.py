@@ -20,8 +20,8 @@ class CovMask(Dataset):
     def __init__(self, data_path, transform=None):
 
         self.data_path = data_path
-        self.img_path = os.path.join(self.data_path, "data_mask/images")
-        self.mask_path = os.path.join(self.data_path, "data_mask/masks")
+        self.img_path = os.path.join(self.data_path, "images")
+        self.mask_path = os.path.join(self.data_path, "masks")
         self.img_list = self.get_filenames(self.img_path)
         self.mask_list = self.get_filenames(self.mask_path)
 
@@ -99,26 +99,15 @@ class MaskDataset(pl.LightningDataModule):
         )
 
     def setup(self, stage=None):
-        dataset = CovMask(self.data_path)
-        train_size = int(0.7 * len(dataset))  # take 70% for training
-        val_size = int(0.2 * len(dataset))  # take 20% for validation
-        test_size = len(dataset) - (
-            train_size + val_size
-        )  # take 10% for testing
+        self.train_dataset = CovMask(os.path.join(self.data_path, "train\\"))
+        self.val_dataset = CovMask(os.path.join(self.data_path, "val\\"))
 
-        (
-            self.train_set,
-            self.val_set,
-            self.test_set,
-        ) = torch.utils.data.random_split(
-            dataset, [train_size, val_size, test_size]
-        )
-
-        self.train_set.dataset.transform = self.transform
+        self.train_dataset.transform = self.transform
+        # self.train_set.dataset.transform = self.transform
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_set,
+            self.train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
@@ -126,15 +115,7 @@ class MaskDataset(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_set,
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=self.num_workers,
-        )
-
-    def test_dataloader(self):
-        return DataLoader(
-            self.test_set,
+            self.val_dataset,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
@@ -146,8 +127,10 @@ class MaskDataset(pl.LightningDataModule):
         figure_mask = plt.figure(figsize=(8, 8))
         cols, rows = 3, 3
         for i in range(1, cols * rows + 1):
-            sample_idx = torch.randint(len(self.train_set), size=(1,)).item()
-            img, mask = self.train_set[sample_idx]
+            sample_idx = torch.randint(
+                len(self.train_dataset), size=(1,)
+            ).item()
+            img, mask = self.train_dataset[sample_idx]
             img_ax = figure_img.add_subplot(rows, cols, i)
             mask_ax = figure_mask.add_subplot(rows, cols, i)
             img_ax.axis("off")
