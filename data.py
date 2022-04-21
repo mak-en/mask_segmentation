@@ -20,8 +20,8 @@ class CovMask(Dataset):
     def __init__(self, data_path, transform=None):
 
         self.data_path = data_path
-        self.img_path = os.path.join(self.data_path, "images")
-        self.mask_path = os.path.join(self.data_path, "masks")
+        self.img_path = os.path.join(self.data_path, "images/")
+        self.mask_path = os.path.join(self.data_path, "masks/")
         self.img_list = self.get_filenames(self.img_path)
         self.mask_list = self.get_filenames(self.mask_path)
 
@@ -83,7 +83,7 @@ class MaskDataset(pl.LightningDataModule):
         self.num_workers = num_workers
 
         # Transforms for train subsets (different for img and mask: the mask
-        # tranforamtion does not include non affine transformations (look at
+        # tranforamtion does not include non-affine transformations (look at
         # the target parameter in the transforamtions classes below))
         self.transform = A.Compose(
             [
@@ -99,8 +99,8 @@ class MaskDataset(pl.LightningDataModule):
         )
 
     def setup(self, stage=None):
-        self.train_dataset = CovMask(os.path.join(self.data_path, "train\\"))
-        self.val_dataset = CovMask(os.path.join(self.data_path, "val\\"))
+        self.train_dataset = CovMask(os.path.join(self.data_path, "train/"))
+        self.val_dataset = CovMask(os.path.join(self.data_path, "val/"))
 
         self.train_dataset.transform = self.transform
         # self.train_set.dataset.transform = self.transform
@@ -152,3 +152,7 @@ class MaskDataset(pl.LightningDataModule):
         ax_img.imshow(img.permute(1, 2, 0))
         ax_mask.imshow(mask.permute(1, 2, 0))
         plt.show()
+
+
+# cl = MaskDataset("data/")
+# cl.setup()
