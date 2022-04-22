@@ -12,8 +12,8 @@ from typing import Optional
 
 # Dataset
 class CovMask(Dataset):
-    """
-    A dataset for the segmentation of masks against covid-19.
+    """A dataset for the segmentation of masks against covid-19.
+
     The link - https://www.kaggle.com/perke986/face-mask-segmentation-dataset
     """
 
@@ -64,8 +64,8 @@ class CovMask(Dataset):
 
 
 class MaskDataset(pl.LightningDataModule):
-    """
-    Pytorch Lightning DataModule.
+    """Pytorch Lightning DataModule.
+
     Moving the transform operation here (from the CovMask(Dataset)) allows
     a flexible adjustment of the train, validate and test subsets.
     """
@@ -85,7 +85,7 @@ class MaskDataset(pl.LightningDataModule):
         # Transforms for train subsets (different for img and mask: the mask
         # tranforamtion does not include non-affine transformations (look at
         # the target parameter in the transforamtions classes below))
-        self.transform = A.Compose(
+        self.train_transform = A.Compose(
             [
                 A.Resize(224, 224),
                 A.VerticalFlip(p=0.5),
@@ -97,13 +97,18 @@ class MaskDataset(pl.LightningDataModule):
                 A.RandomGamma(p=0.8),
             ]
         )
+        self.val_transform = A.Compose(
+            [
+                A.Resize(224, 224),
+            ]
+        )
 
     def setup(self, stage=None):
         self.train_dataset = CovMask(os.path.join(self.data_path, "train/"))
         self.val_dataset = CovMask(os.path.join(self.data_path, "val/"))
 
-        self.train_dataset.transform = self.transform
-        # self.train_set.dataset.transform = self.transform
+        self.train_dataset.transform = self.train_transform
+        self.val_dataset.transform = self.val_transform
 
     def train_dataloader(self):
         return DataLoader(
@@ -152,7 +157,3 @@ class MaskDataset(pl.LightningDataModule):
         ax_img.imshow(img.permute(1, 2, 0))
         ax_mask.imshow(mask.permute(1, 2, 0))
         plt.show()
-
-
-# cl = MaskDataset("data/")
-# cl.setup()

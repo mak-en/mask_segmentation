@@ -27,7 +27,7 @@ class MyModel(pl.LightningModule):
             classes=out_classes,
             **kwargs,
         )
-
+        self.save_hyperparameters()
         # preprocessing parameteres for image
         params = smp.encoders.get_preprocessing_params(encoder_name)
         self.register_buffer(
@@ -149,8 +149,8 @@ class MyModel(pl.LightningModule):
         # on dataset_iou.
         dataset_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
 
-        transform = T.ToPILImage()
         # Making a dict for logging in wandb
+        transform = T.ToPILImage()
         mask_img = wandb.Image(
             transform(graphics["image"][0]),
             masks={
