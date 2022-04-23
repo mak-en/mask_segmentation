@@ -48,7 +48,7 @@ class MyModel(pl.LightningModule):
         mask = self.model(image)
         return mask
 
-    def shared_step(self, batch, stage):
+    def shared_step(self, batch):
 
         image = batch[0]
 
@@ -174,22 +174,19 @@ class MyModel(pl.LightningModule):
         self.log_dict(metrics, prog_bar=True)
 
     def training_step(self, batch, batch_idx):
-        return self.shared_step(batch, "train")
+        return self.shared_step(batch)
 
     def training_epoch_end(self, outputs):
         return self.shared_epoch_end(outputs, "train")
 
     def validation_step(self, batch, batch_idx):
-        return self.shared_step(batch, "valid")
+        return self.shared_step(batch)
 
     def validation_epoch_end(self, outputs):
         return self.shared_epoch_end(outputs, "valid")
 
-    def test_step(self, batch, batch_idx):
-        return self.shared_step(batch, "test")
-
-    def test_epoch_end(self, outputs):
-        return self.shared_epoch_end(outputs, "test")
+    def predict_step(self, batch, batch_idx):
+        return self.shared_step(batch)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)

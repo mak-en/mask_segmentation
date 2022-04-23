@@ -1,4 +1,7 @@
 # Inference script
+from typing import Any
+import warnings
+
 import albumentations as A
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
@@ -6,7 +9,14 @@ import pytorch_lightning as pl
 from model import MyModel
 from data import CovMask
 
+
+def show_results(predictions: Any, display_pred: bool = True):
+    pass
+
+
 if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
+
     # Transform
     predict_transform = A.Compose([A.Resize(224, 224)])
 
@@ -18,8 +28,10 @@ if __name__ == "__main__":
 
     # Model
     model = MyModel.load_from_checkpoint(
-        "best_models_ckpt/driven-sweep-1-epoch=02-step=116-valid_dataset_iou=0.10.ckpt"
+        "best_models_ckpt/elated-sweep-1-epoch=01-step=019-valid_dataset_iou=0.04.ckpt"
     )
 
-    trainer = pl.Trainer(gpus=-1)  # gpus=-1 - use all gpus
+    trainer = pl.Trainer(logger=False, gpus=-1)  # gpus=-1 - use all gpus
     predictions = trainer.predict(model, dataloaders=predict_dataloader)
+
+    show_results(predictions)
