@@ -7,13 +7,16 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 import torch
 import segmentation_models_pytorch as smp
+import matplotlib.pyplot as plt
 
 
 from model import MyModel
 from data import CovMask
 
 
-def show_results(predictions: Any, display_pred: bool = True):
+def show_results(
+    predictions: Any, display_pred: bool = True, batch_size: int = 1
+):
     images = torch.cat([x["graphics"]["image"] for x in predictions])
     masks = torch.cat([x["graphics"]["mask"] for x in predictions])
     pred_masks = torch.cat([x["graphics"]["pred_mask"] for x in predictions])
@@ -42,8 +45,61 @@ def show_results(predictions: Any, display_pred: bool = True):
         + f"DATASET_IOU: {dataset_iou}"
     )
 
-    if display_pred == True:
-        pass
+    # Depicts the results of the test from the last batch
+    if display_pred is True:
+        if batch_size < 4:
+            figure_img = plt.figure(figsize=(24, 8))
+            cols, rows = 3, 1
+            graphics = {}
+            graphics["images"] = images[-1]
+            graphics["masks"] = masks[-1]
+            graphics["pred_masks"] = pred_masks[-1]
+            idx = 0
+            for j in range(cols):
+                if j == 0:
+                    idx += 1
+                    fig_ax = figure_img.add_subplot(rows, cols, idx)
+                    fig_ax.axis("off")
+                    fig_ax.imshow(graphics["images"].permute(1, 2, 0))
+                elif j == 1:
+                    idx += 1
+                    fig_ax = figure_img.add_subplot(rows, cols, idx)
+                    fig_ax.axis("off")
+                    fig_ax.imshow(graphics["masks"].permute(1, 2, 0))
+                else:
+                    idx += 1
+                    fig_ax = figure_img.add_subplot(rows, cols, idx)
+                    fig_ax.axis("off")
+                    fig_ax.imshow(graphics["pred_masks"].permute(1, 2, 0))
+            plt.show()
+        else:
+            figure_img = plt.figure(figsize=(24, 12))
+            cols, rows = 3, 3
+            graphics = {}
+            graphics["images"] = images[-3:]
+            graphics["masks"] = masks[-3:]
+            graphics["pred_masks"] = pred_masks[-3:]
+            idx = 0
+            for i in range(rows):
+                for j in range(cols):
+                    if j == 0:
+                        idx += 1
+                        fig_ax = figure_img.add_subplot(rows, cols, idx)
+                        fig_ax.axis("off")
+                        fig_ax.imshow(graphics["images"][i].permute(1, 2, 0))
+                    elif j == 1:
+                        idx += 1
+                        fig_ax = figure_img.add_subplot(rows, cols, idx)
+                        fig_ax.axis("off")
+                        fig_ax.imshow(graphics["masks"][i].permute(1, 2, 0))
+                    else:
+                        idx += 1
+                        fig_ax = figure_img.add_subplot(rows, cols, idx)
+                        fig_ax.axis("off")
+                        fig_ax.imshow(
+                            graphics["pred_masks"][i].permute(1, 2, 0)
+                        )
+            plt.show()
 
 
 if __name__ == "__main__":
@@ -66,4 +122,4 @@ if __name__ == "__main__":
     trainer = pl.Trainer(logger=False, gpus=-1)  # gpus=-1 - use all gpus
     predictions = trainer.predict(model, dataloaders=predict_dataloader)
 
-    show_results(predictions)
+    show_results(predictions, batch_size=4)
