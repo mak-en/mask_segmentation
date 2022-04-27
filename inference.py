@@ -45,7 +45,8 @@ def show_results(
         + f"DATASET_IOU: {dataset_iou}"
     )
 
-    # Depicts the results of the test from the last batch
+    # Depicts the results of the test from the last batch.
+    # If the batch size is less then 4, show only 1 image, ohterwise 3.
     if display_pred is True:
         if batch_size < 4:
             figure_img = plt.figure(figsize=(24, 8))
