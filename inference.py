@@ -2,6 +2,7 @@
 from typing import Any
 import warnings
 import argparse
+import os
 
 import albumentations as A
 from torch.utils.data import DataLoader
@@ -9,7 +10,6 @@ import pytorch_lightning as pl
 import torch
 import segmentation_models_pytorch as smp
 import matplotlib.pyplot as plt
-
 
 from model import MyModel
 from data import CovMask
@@ -119,7 +119,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--best_model_path", type=str, help="path to the best model"
     )
+    parser.add_argument(
+        "--cpu_number", default=os.cpu_count(), type=int, help="number of cpus"
+    )
     args = parser.parse_args()
+
+    # Model
+    model = MyModel.load_from_checkpoint(args.best_model_path)
 
     # Transform
     predict_transform = A.Compose([A.Resize(224, 224)])
@@ -127,11 +133,11 @@ if __name__ == "__main__":
     # Data
     predict_dataset = CovMask(args.data_test_path, transform=predict_transform)
     predict_dataloader = DataLoader(
-        predict_dataset, batch_size=4, shuffle=False, num_workers=1
+        predict_dataset,
+        batch_size=4,
+        shuffle=False,
+        num_workers=args.cpu_number,
     )
-
-    # Model
-    model = MyModel.load_from_checkpoint(args.best_model_path)
 
     # Pytorch lightning trainer
     trainer = pl.Trainer(logger=False, gpus=-1)  # gpus=-1 - use all gpus
