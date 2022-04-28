@@ -1,6 +1,7 @@
 # Inference script
 from typing import Any
 import warnings
+import argparse
 
 import albumentations as A
 from torch.utils.data import DataLoader
@@ -46,7 +47,7 @@ def show_results(
     )
 
     # Depicts the results of the test from the last batch.
-    # If the batch size is less then 4, show only 1 image, ohterwise 3.
+    # If the batch size is less then 4, shows only 1 image, ohterwise 3.
     if display_pred is True:
         if batch_size < 4:
             figure_img = plt.figure(figsize=(24, 8))
@@ -71,6 +72,7 @@ def show_results(
                     idx += 1
                     fig_ax = figure_img.add_subplot(rows, cols, idx)
                     fig_ax.axis("off")
+                    fig_ax.title.set_text(f"IoU: {per_image_iou[-1].item()}")
                     fig_ax.imshow(graphics["pred_masks"].permute(1, 2, 0))
             plt.show()
         else:
@@ -97,6 +99,9 @@ def show_results(
                         idx += 1
                         fig_ax = figure_img.add_subplot(rows, cols, idx)
                         fig_ax.axis("off")
+                        fig_ax.title.set_text(
+                            f"IoU: {per_image_iou[-3+i].item()}"
+                        )
                         fig_ax.imshow(
                             graphics["pred_masks"][i].permute(1, 2, 0)
                         )
@@ -106,21 +111,31 @@ def show_results(
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
 
+    # Parser for the script arguments
+    parser = argparse.ArgumentParser(description="Inference mask segmentation")
+    parser.add_argument(
+        "--data_test_path", type=str, help="path to the test data folder"
+    )
+    parser.add_argument(
+        "--best_model_path", type=str, help="path to the best model"
+    )
+    args = parser.parse_args()
+
     # Transform
     predict_transform = A.Compose([A.Resize(224, 224)])
 
     # Data
-    predict_dataset = CovMask("data/test/", transform=predict_transform)
+    predict_dataset = CovMask(args.data_test_path, transform=predict_transform)
     predict_dataloader = DataLoader(
         predict_dataset, batch_size=4, shuffle=False, num_workers=1
     )
 
     # Model
-    model = MyModel.load_from_checkpoint(
-        "best_models_ckpt/driven-sweep-1-epoch=02-step=116-valid_dataset_iou=0.10.ckpt"
-    )
+    model = MyModel.load_from_checkpoint(args.best_model_path)
 
+    # Pytorch lightning trainer
     trainer = pl.Trainer(logger=False, gpus=-1)  # gpus=-1 - use all gpus
     predictions = trainer.predict(model, dataloaders=predict_dataloader)
 
     show_results(predictions, batch_size=4)
+
