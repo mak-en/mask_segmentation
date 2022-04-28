@@ -138,4 +138,3 @@ if __name__ == "__main__":
     predictions = trainer.predict(model, dataloaders=predict_dataloader)
 
     show_results(predictions, batch_size=4)
-
