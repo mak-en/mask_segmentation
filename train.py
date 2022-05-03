@@ -21,11 +21,12 @@ def train():
     print("CONFIG", wandb.config)
 
     model = MyModel(
-        wandb.config.architecture,
-        wandb.config.encoder,
-        wandb.config.in_channels,
-        wandb.config.out_classes,
-        lr=wandb.config.lr,
+        # wandb.config.architecture,
+        # wandb.config.encoder,
+        # wandb.config.in_channels,
+        # wandb.config.out_classes,
+        # lr=wandb.config.lr,
+        wandb.config
     )
 
     mask_dataset = MaskDataset(
