@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 import torch
 import matplotlib.pyplot as plt
 import albumentations as A
-from typing import Optional
+from typing import Any
 
 
 # Dataset
@@ -70,17 +70,11 @@ class MaskDataset(pl.LightningDataModule):
     a flexible adjustment of the train, validate and test subsets.
     """
 
-    def __init__(
-        self,
-        data_path: str,
-        num_workers: Optional[int] = 1,
-        batch_size: Optional[int] = 32,
-    ):
+    def __init__(self, wandb_config: Any):
         super().__init__()
-        # print(hparams)
-        self.data_path = data_path
-        self.batch_size = batch_size
-        self.num_workers = num_workers
+        self.data_path = wandb_config["data_path"]
+        self.batch_size = wandb_config["batch_size"]
+        self.num_workers = wandb_config["num_workers"]
 
         # Transforms for train subsets (different for img and mask: the mask
         # tranforamtion does not include non-affine transformations (look at

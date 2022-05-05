@@ -1,14 +1,9 @@
-import os
-
 import torch
 import torchvision.transforms as T
 import pytorch_lightning as pl
 import segmentation_models_pytorch as smp
 import wandb
 import albumentations as A
-from torch.utils.data import DataLoader
-
-from data import CovMask
 
 
 class MyModel(pl.LightningModule):
@@ -21,29 +16,31 @@ class MyModel(pl.LightningModule):
         # in_channels: int = 3,
         # out_classes: int = 1,
         # lr: float = 0.0001,
-        wandb_config,
+        wandb_config: dict,
         **kwargs,
     ):
         super().__init__()
 
-        self.lr = wandb_config.lr
-        self.batch_size = wandb_config.batch_size
-        self.num_workers = wandb_config.cpu_number
-        self.data_path = wandb_config.data_path
+        print(f"WANDB: {wandb_config}")
+
+        # Learning rate
+        self.lr = wandb_config["lr"]
 
         # Smp model
         self.model = smp.create_model(
-            wandb_config.architecure,
-            encoder_name=wandb_config.encoder,
-            in_channels=wandb_config.in_channels,
-            classes=wandb_config.out_classes,
+            wandb_config["architecture"],
+            encoder_name=wandb_config["encoder"],
+            in_channels=wandb_config["in_channels"],
+            classes=wandb_config["out_classes"],
             **kwargs,
         )
 
+        # Saves hyperparameters, to fetch them when a check point model
+        # is inferenced
         self.save_hyperparameters()
 
         # preprocessing parameteres for image
-        params = smp.encoders.get_preprocessing_params(wandb_config.encoder)
+        params = smp.encoders.get_preprocessing_params(wandb_config["encoder"])
         self.register_buffer(
             "std", torch.tensor(params["std"]).view(1, 3, 1, 1)
         )
@@ -57,48 +54,11 @@ class MyModel(pl.LightningModule):
         )
 
         # Transforms are model specific
-        self.train_transform = A.Compose(
-            [
-                A.Resize(224, 224),
-                A.VerticalFlip(p=0.5),
-                A.RandomRotate90(p=0.5),
-                A.GridDistortion(p=0.5),
-                A.OpticalDistortion(distort_limit=2, shift_limit=0.5, p=1),
-                A.CLAHE(p=0.8),
-                A.RandomBrightnessContrast(p=0.8),
-                A.RandomGamma(p=0.8),
-            ]
-        )
-        self.val_transform = A.Compose(
+        self.transform = A.Compose(
             [
                 A.Resize(224, 224),
             ]
         )
-
-    # ------------------------------ Data Field -------------------------------
-    def train_dataloader(self):
-        return DataLoader(
-            CovMask(
-                os.path.join(self.data_path, "train/"),
-                transform=self.train_transform,
-            ),
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.num_workers,
-        )
-
-    def val_dataloader(self):
-        return DataLoader(
-            CovMask(
-                os.path.join(self.data_path, "val/"),
-                transform=self.val_transform,
-            ),
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=self.num_workers,
-        )
-
-    # ---------------------------- End Data Field -----------------------------
 
     def forward(self, image):
         # normalize image here

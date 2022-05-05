@@ -30,9 +30,7 @@ def train():
     )
 
     mask_dataset = MaskDataset(
-        wandb.config.data_path,
-        num_workers=wandb.config.cpu_number,
-        batch_size=wandb.config.batch_size,
+        wandb.config
     )
 
     # Init ModelCheckpoint callback, monitoring 'valid_dataset_iou'
