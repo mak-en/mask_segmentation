@@ -20,18 +20,9 @@ def train():
 
     print("CONFIG", wandb.config)
 
-    model = MyModel(
-        # wandb.config.architecture,
-        # wandb.config.encoder,
-        # wandb.config.in_channels,
-        # wandb.config.out_classes,
-        # lr=wandb.config.lr,
-        wandb.config
-    )
+    model = MyModel(wandb.config)
 
-    mask_dataset = MaskDataset(
-        wandb.config
-    )
+    mask_dataset = MaskDataset(wandb.config, model.transform)
 
     # Init ModelCheckpoint callback, monitoring 'valid_dataset_iou'
     checkpoint_callback = ModelCheckpoint(

@@ -11,11 +11,6 @@ class MyModel(pl.LightningModule):
 
     def __init__(
         self,
-        # arch: str = "FPN",
-        # encoder_name: str = "resnet34",
-        # in_channels: int = 3,
-        # out_classes: int = 1,
-        # lr: float = 0.0001,
         wandb_config: dict,
         **kwargs,
     ):
@@ -35,10 +30,6 @@ class MyModel(pl.LightningModule):
             **kwargs,
         )
 
-        # Saves hyperparameters, to fetch them when a check point model
-        # is inferenced
-        self.save_hyperparameters()
-
         # preprocessing parameteres for image
         params = smp.encoders.get_preprocessing_params(wandb_config["encoder"])
         self.register_buffer(
@@ -47,6 +38,8 @@ class MyModel(pl.LightningModule):
         self.register_buffer(
             "mean", torch.tensor(params["mean"]).view(1, 3, 1, 1)
         )
+        # Basic data transformations needed for the model input
+        self.transform = A.Resize(224, 224)
 
         # for image segmentation dice loss could be the best first choice
         self.loss_fn = smp.losses.DiceLoss(

@@ -70,18 +70,18 @@ class MaskDataset(pl.LightningDataModule):
     a flexible adjustment of the train, validate and test subsets.
     """
 
-    def __init__(self, wandb_config: Any):
+    def __init__(self, wandb_config: Any, model_transform: Any = None):
         super().__init__()
         self.data_path = wandb_config["data_path"]
         self.batch_size = wandb_config["batch_size"]
-        self.num_workers = wandb_config["num_workers"]
+        self.num_workers = wandb_config["cpu_number"]
 
         # Transforms for train subsets (different for img and mask: the mask
         # tranforamtion does not include non-affine transformations (look at
         # the target parameter in the transforamtions classes below))
         self.train_transform = A.Compose(
             [
-                A.Resize(224, 224),
+                model_transform,
                 A.VerticalFlip(p=0.5),
                 A.RandomRotate90(p=0.5),
                 A.GridDistortion(p=0.5),
@@ -91,11 +91,7 @@ class MaskDataset(pl.LightningDataModule):
                 A.RandomGamma(p=0.8),
             ]
         )
-        self.val_transform = A.Compose(
-            [
-                A.Resize(224, 224),
-            ]
-        )
+        self.val_transform = A.Compose([model_transform])
 
     def setup(self, stage=None):
         self.train_dataset = CovMask(os.path.join(self.data_path, "train/"))
