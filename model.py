@@ -30,6 +30,7 @@ class MyModel(pl.LightningModule):
             **kwargs,
         )
 
+        # ----- Data realated stuf -----
         # preprocessing parameteres for image
         params = smp.encoders.get_preprocessing_params(wandb_config["encoder"])
         self.register_buffer(
@@ -38,19 +39,21 @@ class MyModel(pl.LightningModule):
         self.register_buffer(
             "mean", torch.tensor(params["mean"]).view(1, 3, 1, 1)
         )
+
         # Basic data transformations needed for the model input
         self.transform = A.Resize(224, 224)
-
-        # for image segmentation dice loss could be the best first choice
-        self.loss_fn = smp.losses.DiceLoss(
-            smp.losses.BINARY_MODE, from_logits=True
-        )
 
         # Transforms are model specific
         self.transform = A.Compose(
             [
                 A.Resize(224, 224),
             ]
+        )
+        # ------------------------------
+
+        # for image segmentation dice loss could be the best first choice
+        self.loss_fn = smp.losses.DiceLoss(
+            smp.losses.BINARY_MODE, from_logits=True
         )
 
     def forward(self, image):
