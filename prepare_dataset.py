@@ -1,4 +1,5 @@
 import splitfolders
+import argparse
 
 # Split folders with files (e.g. images) into train, validation and
 # test (dataset) folders.
@@ -44,9 +45,19 @@ import splitfolders
 # i.e, `(.8, .2)`.
 # Train, val, test
 
+# Parser for the script arguments
+parser = argparse.ArgumentParser(description="Dataset formation")
+parser.add_argument(
+    "--in_data_path", type=str, help="path to the original data folder"
+)
+parser.add_argument(
+    "--out_data_path", type=str, help="path to the output data folder"
+)
+args = parser.parse_args()
+
 splitfolders.ratio(
-    "C:/Users/ant_on/Desktop/data_mask/",
-    output="./data",
+    args.in_data_path,
+    output=args.out_data_path,
     seed=42,
     ratio=(0.7, 0.2, 0.1),
     group_prefix=None,
