@@ -25,14 +25,14 @@ class CovMask(Dataset):
         self.img_list = self.get_filenames(self.img_path)
         self.mask_list = self.get_filenames(self.mask_path)
 
+        print(self.img_list, self.mask_list)
+
         self.transform = transform
 
     def __len__(self):
         return len(self.img_list)
 
     def __getitem__(self, idx):
-        print(self.img_list[idx], self.mask_list[idx])
-
         img = Image.open(self.img_list[idx])
         mask = Image.open(self.mask_list[idx]).convert("L")
 
