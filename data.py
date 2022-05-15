@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
@@ -7,7 +8,6 @@ import pytorch_lightning as pl
 import torch
 import matplotlib.pyplot as plt
 import albumentations as A
-from typing import Any
 
 
 # Dataset
