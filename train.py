@@ -7,6 +7,7 @@ from pytorch_lightning.loggers import WandbLogger
 import pytorch_lightning as pl
 import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint
+import torch
 
 from model import MyModel
 from data import MaskDataset
@@ -35,7 +36,9 @@ def train():
 
     trainer = pl.Trainer(
         logger=wandb_logger,
-        gpus=-1,  # gpus=-1 - use all gpus
+        gpus=-1
+        if torch.cuda.is_available()
+        else None,  # gpus=-1 - use all gpus
         max_epochs=10,
         callbacks=[checkpoint_callback],
     )
